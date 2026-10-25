@@ -1,4 +1,3 @@
-
 Closes #
 
 ## What this does
@@ -8,5 +7,6 @@ Closes #
 ## Screenshots (phone and desktop, for UI changes)
 
 ## Checklist
+
 - [ ] Tests added or updated
 - [ ] Manual device checklist done (map, camera, location, or push changes)
