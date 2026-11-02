@@ -1,5 +1,5 @@
 import 'leaflet/dist/leaflet.css';
-import React, { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -27,7 +27,9 @@ function RecenterMap({ center }: { center: [number, number] }) {
 
 export default function MapTest() {
   // Default fallback: Urbana, IL center
-  const [position, setPosition] = useState<[number, number]>([40.1164, -88.2434]);
+  const [position, setPosition] = useState<[number, number]>([
+    40.1164, -88.2434,
+  ]);
   const [hasLocation, setHasLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
@@ -45,23 +47,29 @@ export default function MapTest() {
       },
       (err) => {
         console.warn(`Geolocation error (${err.code}): ${err.message}`);
-        setLocationError('Could not get your precise location. Showing default area.');
+        setLocationError(
+          'Could not get your precise location. Showing default area.',
+        );
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
     );
   }, []);
 
   return (
-    <div className="flex flex-col h-screen w-full p-4 bg-gray-50">
+    <div className="flex h-screen w-full flex-col bg-gray-50 p-4">
       <div className="mb-4">
-        <h1 className="text-xl font-bold text-gray-800">Leaflet Mobile & Desktop Test</h1>
+        <h1 className="text-xl font-bold text-gray-800">
+          Leaflet Mobile & Desktop Test
+        </h1>
         <p className="text-sm text-gray-600">
-          {hasLocation ? 'Showing your current location.' : (locationError || 'Fetching location...')}
+          {hasLocation
+            ? 'Showing your current location.'
+            : locationError || 'Fetching location...'}
         </p>
       </div>
 
       {/* Map Container - h-96 or flex-grow so it renders properly on mobile screens */}
-      <div className="relative flex-grow w-full h-[500px] rounded-xl overflow-hidden shadow-lg border border-gray-200">
+      <div className="relative h-[500px] w-full flex-grow overflow-hidden rounded-xl border border-gray-200 shadow-lg">
         <MapContainer
           center={position}
           zoom={15}
