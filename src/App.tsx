@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import AuthProvider from './components/AuthProvider';
 import Layout from './components/Layout';
+import MapTest from './components/MapTest';
 import ProtectedRoute from './components/ProtectedRoute';
 import Feed from './pages/Feed';
 import MyPets from './pages/MyPets';
@@ -28,6 +29,7 @@ export default function App() {
           </Route>
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/sign-up" element={<SignUp />} />
+          <Route path="/map-test" element={<MapTest />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
