@@ -25,17 +25,20 @@ function RecenterMap({ center }: { center: [number, number] }) {
   return null;
 }
 
+const GEOLOCATION_UNSUPPORTED = 'Geolocation is not supported by your browser';
+
 export default function MapTest() {
   // Default fallback: Urbana, IL center
   const [position, setPosition] = useState<[number, number]>([
     40.1164, -88.2434,
   ]);
   const [hasLocation, setHasLocation] = useState(false);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(() =>
+    navigator.geolocation ? null : GEOLOCATION_UNSUPPORTED,
+  );
 
   useEffect(() => {
     if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser');
       return;
     }
 
