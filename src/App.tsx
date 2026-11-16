@@ -1,32 +1,37 @@
-import 'leaflet/dist/leaflet.css';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import AuthProvider from './components/AuthProvider';
+import Layout from './components/Layout';
 import MapTest from './components/MapTest';
+import ProtectedRoute from './components/ProtectedRoute';
+import Feed from './pages/Feed';
+import MyPets from './pages/MyPets';
+import Pet from './pages/Pet';
+import Profile from './pages/Profile';
+import Report from './pages/Report';
+import Settings from './pages/Settings';
+import SignIn from './pages/SignIn';
+import SignUp from './pages/SignUp';
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Home view with a link to the map test */}
-        <Route
-          path="/"
-          element={
-            <div className="p-8 font-sans">
-              <h1 className="mb-4 text-2xl font-bold">Pet-Net Development</h1>
-              <p className="mb-4 text-gray-600">
-                Sprint: Leaflet Mobile & Desktop Validation
-              </p>
-              <Link
-                to="/map-test"
-                className="inline-block rounded-lg bg-blue-600 px-4 py-2 font-medium text-white shadow hover:bg-blue-700"
-              >
-                View Leaflet Map Test (/map-test) 🗺️
-              </Link>
-            </div>
-          }
-        />
-
-        <Route path="/map-test" element={<MapTest />} />
-      </Routes>
+      <AuthProvider>
+        <Routes>
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Feed />} />
+              <Route path="/my-pets" element={<MyPets />} />
+              <Route path="/pets/:id" element={<Pet />} />
+              <Route path="/report" element={<Report />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+          </Route>
+          <Route path="/sign-in" element={<SignIn />} />
+          <Route path="/sign-up" element={<SignUp />} />
+          <Route path="/map-test" element={<MapTest />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }
