@@ -1,3 +1,11 @@
+import HomeLocationForm from '../components/HomeLocationForm';
+import PageHeader from '../components/PageHeader';
+
 export default function Profile() {
-  return <h1>Profile</h1>;
+  return (
+    <>
+      <PageHeader title="Profile" />
+      <HomeLocationForm />
+    </>
+  );
 }
