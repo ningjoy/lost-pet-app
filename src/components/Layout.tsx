@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 const phoneLinks = [
   { to: '/', label: 'Feed', end: true },
@@ -11,10 +12,14 @@ const desktopLinks = [
   { to: '/settings', label: 'Settings', end: false },
 ];
 
+function signOut() {
+  void supabase.auth.signOut();
+}
+
 export default function Layout() {
   return (
     <div className="min-h-screen md:flex">
-      <aside className="hidden w-56 shrink-0 border-r border-gray-200 p-4 md:block">
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-gray-200 p-4 md:flex">
         <p className="mb-6 text-lg font-bold">Lost Pet</p>
         <nav className="flex flex-col gap-1">
           {desktopLinks.map((link) => (
@@ -30,9 +35,25 @@ export default function Layout() {
             </NavLink>
           ))}
         </nav>
+        <button
+          type="button"
+          onClick={signOut}
+          className="mt-auto rounded border border-gray-300 px-3 py-2 text-sm"
+        >
+          Sign out
+        </button>
       </aside>
 
       <main className="flex-1 p-4 pb-20 md:pb-4">
+        <div className="mb-2 flex justify-end md:hidden">
+          <button
+            type="button"
+            onClick={signOut}
+            className="rounded border border-gray-300 px-3 py-1 text-xs"
+          >
+            Sign out
+          </button>
+        </div>
         <Outlet />
       </main>
 
