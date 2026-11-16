@@ -29,3 +29,7 @@ supabase/.branches
 
 # Test coverage output
 coverage
+
+# env files with secrets
+.env
+supabase/functions/.env

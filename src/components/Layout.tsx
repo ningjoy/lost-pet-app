@@ -1,14 +1,10 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
-const phoneLinks = [
+const links = [
   { to: '/', label: 'Feed', end: true },
   { to: '/my-pets', label: 'My pets', end: false },
   { to: '/profile', label: 'Profile', end: false },
-];
-
-const desktopLinks = [
-  ...phoneLinks,
   { to: '/settings', label: 'Settings', end: false },
 ];
 
@@ -21,8 +17,8 @@ export default function Layout() {
     <div className="min-h-screen md:flex">
       <aside className="hidden w-56 shrink-0 flex-col border-r border-gray-200 p-4 md:flex">
         <p className="mb-6 text-lg font-bold">Lost Pet</p>
-        <nav className="flex flex-col gap-1">
-          {desktopLinks.map((link) => (
+        <nav aria-label="Main" className="flex flex-col gap-1">
+          {links.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
@@ -57,8 +53,11 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 flex border-t border-gray-200 bg-white md:hidden">
-        {phoneLinks.map((link) => (
+      <nav
+        aria-label="Phone"
+        className="fixed inset-x-0 bottom-0 flex border-t border-gray-200 bg-white md:hidden"
+      >
+        {links.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}
