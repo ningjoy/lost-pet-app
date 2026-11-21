@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { LatLng } from './geo';
-import { toPointText } from './geo';
+import { parsePoint, toPointText } from './geo';
 import { supabase } from './supabase';
 
 export const SIGHTING_NOTE_MAX = 500;
@@ -85,4 +85,38 @@ export async function submitSighting({
     }
     throw error;
   }
+}
+
+export type Sighting = {
+  id: string;
+  point: LatLng;
+  seenAt: string;
+  note: string | null;
+  photoPath: string | null;
+  status: 'unconfirmed' | 'confirmed';
+};
+
+export async function fetchSightings(reportId: string): Promise<Sighting[]> {
+  const { data, error } = await supabase
+    .from('sightings')
+    .select('id, location, seen_at, note, photo_path, status')
+    .eq('report_id', reportId)
+    // Allowlist, so an unknown future status can't reach the map icons.
+    .in('status', ['unconfirmed', 'confirmed'])
+    .order('seen_at');
+  if (error) throw error;
+  return data.flatMap((row) => {
+    const point = parsePoint(row.location);
+    if (!point) return [];
+    return [
+      {
+        id: row.id,
+        point,
+        seenAt: row.seen_at,
+        note: row.note,
+        photoPath: row.photo_path,
+        status: row.status as Sighting['status'],
+      },
+    ];
+  });
 }
