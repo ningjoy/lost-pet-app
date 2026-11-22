@@ -1,10 +1,33 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { AuthContext } from '../lib/auth-context';
 import Report from './Report';
 
-const api = vi.hoisted(() => ({ result: vi.fn() }));
+const api = vi.hoisted(() => ({
+  result: vi.fn(),
+  fetchSightings: vi.fn(),
+  on: vi.fn(),
+  subscribe: vi.fn(),
+  channel: vi.fn(),
+  removeChannel: vi.fn(),
+}));
+
+vi.mock('../lib/sighting', () => ({ fetchSightings: api.fetchSightings }));
+
+vi.mock('../components/ReportMap', () => ({
+  default: ({
+    sightings,
+    isOwner,
+  }: {
+    sightings: unknown[];
+    isOwner: boolean;
+  }) => (
+    <p>
+      map {sightings.length} {isOwner ? 'owner' : 'guest'}
+    </p>
+  ),
+}));
 
 vi.mock('../lib/supabase', () => ({
   supabase: {
@@ -13,6 +36,11 @@ vi.mock('../lib/supabase', () => ({
         eq: () => ({ maybeSingle: () => api.result() }),
       }),
     }),
+    channel: (name: string) => {
+      api.channel(name);
+      return { on: api.on };
+    },
+    removeChannel: api.removeChannel,
     storage: {
       from: () => ({
         getPublicUrl: (p: string) => ({ data: { publicUrl: `http://x/${p}` } }),
@@ -41,6 +69,8 @@ vi.mock('../components/SightingForm', () => ({
 const report = (status: string) => ({
   data: {
     status,
+    owner_id: 'u1',
+    last_seen_location: '0101000020E6100000CDCCCCCCCC0C56C0CDCCCCCCCC0C4440',
     last_seen_at: '2026-01-01T12:00:00Z',
     pets: { name: 'Rex', photo_paths: ['a.jpg'] },
   },
@@ -63,7 +93,12 @@ function renderPage() {
 const sawButton = () => screen.findByRole('button', { name: 'I saw this pet' });
 
 describe('Report page', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    api.fetchSightings.mockResolvedValue([]);
+    api.on.mockReturnValue({ subscribe: api.subscribe });
+    api.subscribe.mockReturnValue({ id: 'chan' });
+  });
 
   test('open report shows the button', async () => {
     api.result.mockResolvedValue(report('open'));
@@ -144,5 +179,95 @@ describe('Report page', () => {
     api.result.mockResolvedValue(report('open'));
     fireEvent.click(retry);
     expect(await screen.findByText('Rex')).toBeInTheDocument();
+  });
+
+  test('shows the map with sightings and owner flag', async () => {
+    api.result.mockResolvedValue(report('open'));
+    api.fetchSightings.mockResolvedValue([{ id: 's1' }, { id: 's2' }]);
+    renderPage();
+    expect(await screen.findByText('map 2 owner')).toBeInTheDocument();
+    expect(api.fetchSightings).toHaveBeenCalledWith('r1');
+  });
+
+  test('sightings error shows retry that refetches', async () => {
+    api.result.mockResolvedValue(report('open'));
+    api.fetchSightings.mockRejectedValueOnce(new Error('x'));
+    renderPage();
+    expect(
+      await screen.findByText('Could not load sightings'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Rex')).toBeInTheDocument();
+    api.fetchSightings.mockResolvedValue([{ id: 's1' }]);
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByText('map 1 owner')).toBeInTheDocument();
+    expect(
+      screen.queryByText('Could not load sightings'),
+    ).not.toBeInTheDocument();
+  });
+
+  test('subscribes with the report filter and refetches on change', async () => {
+    api.result.mockResolvedValue(report('open'));
+    renderPage();
+    await sawButton();
+    expect(api.channel).toHaveBeenCalledWith(
+      expect.stringMatching(/^sightings:r1:/),
+    );
+    expect(api.on).toHaveBeenCalledWith(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'sightings',
+        filter: 'report_id=eq.r1',
+      },
+      expect.any(Function),
+    );
+    api.fetchSightings.mockClear();
+    api.fetchSightings.mockResolvedValue([{ id: 's1' }]);
+    await act(async () => api.on.mock.calls[0][2]());
+    expect(api.fetchSightings).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('map 1 owner')).toBeInTheDocument();
+  });
+
+  test('becoming visible refetches and resubscribes', async () => {
+    api.result.mockResolvedValue(report('open'));
+    renderPage();
+    await sawButton();
+    api.fetchSightings.mockClear();
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    expect(api.removeChannel).toHaveBeenCalledTimes(1);
+    expect(api.channel).toHaveBeenCalledTimes(2);
+    expect(api.fetchSightings).toHaveBeenCalledTimes(1);
+    // The report itself reloads too, so a found pet loses the button.
+    expect(api.result).toHaveBeenCalledTimes(2);
+  });
+
+  test('refetches once the channel is live', async () => {
+    api.result.mockResolvedValue(report('open'));
+    renderPage();
+    await sawButton();
+    api.fetchSightings.mockClear();
+    await act(async () => api.subscribe.mock.calls[0][0]('SUBSCRIBED'));
+    expect(api.fetchSightings).toHaveBeenCalledTimes(1);
+  });
+
+  test('removes the channel on unmount', async () => {
+    api.result.mockResolvedValue(report('open'));
+    const { unmount } = renderPage();
+    await sawButton();
+    unmount();
+    expect(api.removeChannel).toHaveBeenCalledWith({ id: 'chan' });
+  });
+
+  test('saving a sighting refetches', async () => {
+    api.result.mockResolvedValue(report('open'));
+    renderPage();
+    fireEvent.click(await sawButton());
+    fireEvent.click(screen.getByRole('button', { name: 'I understand' }));
+    api.fetchSightings.mockClear();
+    fireEvent.click(screen.getByText('done'));
+    expect(api.fetchSightings).toHaveBeenCalledTimes(1);
   });
 });
