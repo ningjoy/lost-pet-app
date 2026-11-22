@@ -11,6 +11,9 @@ import SightingForm from './SightingForm';
 
 const api = vi.hoisted(() => ({ submitSighting: vi.fn() }));
 
+// The real client needs env vars that CI does not have.
+vi.mock('../lib/supabase', () => ({ supabase: {} }));
+
 vi.mock('../lib/sighting', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../lib/sighting')>()),
   submitSighting: api.submitSighting,
