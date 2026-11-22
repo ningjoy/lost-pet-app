@@ -22,7 +22,7 @@ export default function App() {
               <Route path="/" element={<Feed />} />
               <Route path="/my-pets" element={<MyPets />} />
               <Route path="/pets/:id" element={<Pet />} />
-              <Route path="/report" element={<Report />} />
+              <Route path="/reports/:id" element={<Report />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
